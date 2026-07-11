@@ -5,7 +5,9 @@ set -euo pipefail
 # ── Configuration ────────────────────────────────────────────────────────────
 BINUTILS_VERSION="2.42"
 GCC_VERSION="14.2.0"
-TARGET="x86_64-boredos"
+TARGET_BUILD="x86_64-elf"
+TARGET_NAME="x86_64-boredos"
+
 PREFIX="${1:-/opt/boredos-toolchain}"
 JOBS=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
 
@@ -21,7 +23,7 @@ need() { command -v "$1" &>/dev/null || die "Required tool '$1' not found"; }
 
 need curl; need make; need tar; need strip
 
-log "Building ${TARGET} cross-toolchain → ${PREFIX}"
+log "Building ${TARGET_NAME} cross-toolchain → ${PREFIX}"
 log "  binutils ${BINUTILS_VERSION}, gcc ${GCC_VERSION}"
 log "  Using ${JOBS} parallel jobs"
 
@@ -46,17 +48,13 @@ curl -fsSL --retry 3 "${BINUTILS_URL}" -o "${BINUTILS_TAR}"
 
 log "Extracting binutils..."
 tar -xf "${BINUTILS_TAR}"
-rm -f "${BINUTILS_TAR}"                  
-
-log "Patching config.sub to recognise boredos..."
-find "binutils-${BINUTILS_VERSION}" -name 'config.sub' -exec \
-    sed -i 's/| linux\*)/| boredos* | linux*)/' {} +
+rm -f "${BINUTILS_TAR}"                  # free tarball immediately
 
 log "Configuring binutils..."
 mkdir -p build-binutils
 (cd build-binutils && \
     "../binutils-${BINUTILS_VERSION}/configure" \
-        --target="${TARGET}" \
+        --target="${TARGET_BUILD}" \
         --prefix="${PREFIX}" \
         --with-sysroot \
         --disable-nls \
@@ -79,17 +77,13 @@ curl -fsSL --retry 3 "${GCC_URL}" -o "${GCC_TAR}"
 
 log "Extracting gcc..."
 tar -xf "${GCC_TAR}"
-rm -f "${GCC_TAR}"                       # free tarball immediately
-
-log "Patching config.sub to recognise boredos..."
-find "gcc-${GCC_VERSION}" -name 'config.sub' -exec \
-    sed -i 's/| linux\*)/| boredos* | linux*)/' {} +
+rm -f "${GCC_TAR}"
 
 log "Configuring gcc..."
 mkdir -p build-gcc
 (cd build-gcc && \
     "../gcc-${GCC_VERSION}/configure" \
-        --target="${TARGET}" \
+        --target="${TARGET_BUILD}" \
         --prefix="${PREFIX}" \
         --enable-languages=c,c++ \
         --without-headers \
@@ -128,6 +122,14 @@ rm -rf \
     "${PREFIX}/share/gcc-"*/python \
     "${PREFIX}/share/gcc-"*/python3
 find "${PREFIX}" -name "*.la" -delete   
+
+# ── Symlinks for the x86_64-boredos-* names ──────────────────────────────────
+log "Installing x86_64-boredos-* symlinks..."
+for bin in "${PREFIX}/bin/${TARGET_BUILD}-"*; do
+    tool="${bin##*${TARGET_BUILD}-}"
+    ln -sf "${PREFIX}/bin/${TARGET_BUILD}-${tool}" \
+           "${PREFIX}/bin/${TARGET_NAME}-${tool}"
+done
 
 # ── Package ───────────────────────────────────────────────────────────────────
 TARBALL="boredos-toolchain.tar.xz"
