@@ -1,46 +1,95 @@
 name: Build Toolchain
 
 on:
-  workflow_dispatch:   # triggered manually or by the main repo
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'build.sh'     # only rebuild if the build script changes
+      - 'build.sh'
 
 permissions:
-  contents: write      # needed to create GitHub releases
+  contents: write
 
 jobs:
   build:
+    name: Build (${{ matrix.host }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: x86_64-linux
+            os: ubuntu-latest
+          - host: x86_64-darwin
+            os: macos-13
+          - host: arm64-darwin
+            os: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libgmp-dev libmpfr-dev libmpc-dev texinfo curl xz-utils
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install gmp mpfr libmpc texinfo xz
+          echo "/opt/homebrew/opt/texinfo/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/texinfo/bin" >> $GITHUB_PATH
+
+      - name: Build toolchain
+        run: |
+          chmod +x build.sh
+          ./build.sh /opt/boredos-toolchain
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolchain-${{ matrix.host }}
+          path: boredos-toolchain-*.tar.xz
+
+  build-freebsd:
+    name: Build (x86_64-freebsd)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            libgmp-dev \
-            libmpfr-dev \
-            libmpc-dev \
-            texinfo \
-            curl \
-            xz-utils
+      - name: Build in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y gmp mpfr libmpc texinfo curl gmake xz
+          run: |
+            chmod +x build.sh
+            ./build.sh /opt/boredos-toolchain
 
-      - name: Build toolchain
-        run: |
-          chmod +x build.sh
-          bash build.sh /opt/boredos-toolchain
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolchain-x86_64-freebsd
+          path: boredos-toolchain-*.tar.xz
 
-      - name: Verify toolchain
+  release:
+    name: Release Assets
+    needs: [build, build-freebsd]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifacts
         run: |
-          /opt/boredos-toolchain/bin/x86_64-boredos-gcc --version
-          /opt/boredos-toolchain/bin/x86_64-boredos-g++ --version
-          /opt/boredos-toolchain/bin/x86_64-boredos-ld --version
-          du -sh /opt/boredos-toolchain
-          ls -lh boredos-toolchain.tar.xz
+          find artifacts -type f -exec mv {} . \;
+          ls -lh
 
       - name: Create GitHub Release
         env:
@@ -48,10 +97,9 @@ jobs:
           BINUTILS_VERSION: "2.42"
           GCC_VERSION: "14.2.0"
         run: |
-          # Delete any existing 'latest' release to replace it
           gh release delete latest --yes 2>/dev/null || true
           gh release create latest \
             --title "BoredOS Toolchain (x86_64-boredos)" \
-            --notes "Pre-built x86_64-boredos cross-compiler (binutils ${BINUTILS_VERSION}, GCC ${GCC_VERSION})." \
+            --notes "Pre-built x86_64-boredos cross-compiler (binutils ${BINUTILS_VERSION}, GCC ${GCC_VERSION}). Supports Linux, macOS (Intel & Apple Silicon), and FreeBSD." \
             --latest \
-            boredos-toolchain.tar.xz
+            boredos-toolchain-*.tar.xz

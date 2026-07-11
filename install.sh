@@ -9,7 +9,16 @@ set -euo pipefail
 
 REPO="BoredOS/toolchain"
 PREFIX="${1:-/opt/boredos-toolchain}"
-ASSET_NAME="boredos-toolchain.tar.xz"
+# Detect Host OS and CPU architecture
+HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH=$(uname -m)
+
+# Standardise BSD variants to freebsd
+if [[ "${HOST_OS}" == *bsd* ]]; then
+    HOST_OS="freebsd"
+fi
+
+ASSET_NAME="boredos-toolchain-${HOST_ARCH}-${HOST_OS}.tar.xz"
 
 log() { echo "==> $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -21,7 +30,7 @@ need curl; need tar
 log "Resolving latest toolchain release from ${REPO}..."
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 DOWNLOAD_URL=$(curl -fsSL "${API_URL}" \
-    | grep -o "\"browser_download_url\":\"[^\"]*${ASSET_NAME}\"" \
+    | grep -o "\"browser_download_url\": *\"[^\"]*${ASSET_NAME}\"" \
     | head -1 \
     | cut -d'"' -f4)
 
@@ -33,6 +42,13 @@ log "Streaming from: ${DOWNLOAD_URL}"
 # Stream directly — no intermediate .tar.xz written to disk
 mkdir -p "$(dirname "${PREFIX}")"
 curl -fsSL --retry 3 "${DOWNLOAD_URL}" | tar -xJ -C "$(dirname "${PREFIX}")"
+
+# Recreate relative symlinks to make the toolchain relocatable
+log "Fixing relocatable symlinks..."
+for bin in "${PREFIX}/bin/x86_64-elf-"*; do
+    tool="${bin##*x86_64-elf-}"
+    ln -sf "x86_64-elf-${tool}" "${PREFIX}/bin/x86_64-boredos-${tool}"
+done
 
 # Verify installation
 TOOLCHAIN_GCC="${PREFIX}/bin/x86_64-boredos-gcc"

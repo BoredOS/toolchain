@@ -21,7 +21,12 @@ log()  { echo "==> $*"; }
 die()  { echo "ERROR: $*" >&2; exit 1; }
 need() { command -v "$1" &>/dev/null || die "Required tool '$1' not found"; }
 
-need curl; need make; need tar; need strip
+MAKE="make"
+if command -v gmake &>/dev/null; then
+    MAKE="gmake"
+fi
+
+need curl; need "${MAKE}"; need tar; need strip
 
 log "Building ${TARGET_NAME} cross-toolchain → ${PREFIX}"
 log "  binutils ${BINUTILS_VERSION}, gcc ${GCC_VERSION}"
@@ -63,10 +68,10 @@ mkdir -p build-binutils
         ${EXTRA_CONFIGURE})
 
 log "Building binutils (${JOBS} jobs)..."
-make -C build-binutils -j"${JOBS}"
+"${MAKE}" -C build-binutils -j"${JOBS}"
 
 log "Installing binutils..."
-make -C build-binutils install
+"${MAKE}" -C build-binutils install
 
 log "Cleaning binutils build artifacts..."
 rm -rf build-binutils "binutils-${BINUTILS_VERSION}"
@@ -98,10 +103,10 @@ mkdir -p build-gcc
         ${EXTRA_CONFIGURE})
 
 log "Building gcc (${JOBS} jobs)..."
-make -C build-gcc -j"${JOBS}" all-gcc all-target-libgcc
+"${MAKE}" -C build-gcc -j"${JOBS}" all-gcc all-target-libgcc
 
 log "Installing gcc..."
-make -C build-gcc install-gcc install-target-libgcc
+"${MAKE}" -C build-gcc install-gcc install-target-libgcc
 
 log "Cleaning gcc build artifacts..."
 rm -rf build-gcc "gcc-${GCC_VERSION}"
@@ -132,7 +137,10 @@ for bin in "${PREFIX}/bin/${TARGET_BUILD}-"*; do
 done
 
 # ── Package ───────────────────────────────────────────────────────────────────
-TARBALL="boredos-toolchain.tar.xz"
+HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH=$(uname -m)
+TARBALL="boredos-toolchain-${HOST_ARCH}-${HOST_OS}.tar.xz"
+
 log "Packaging ${TARBALL}..."
 tar -cJf "${TARBALL}" -C "$(dirname "${PREFIX}")" "$(basename "${PREFIX}")"
 
