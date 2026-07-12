@@ -155,7 +155,7 @@ else:
          sys.exit(1)
     content = content.replace(search_fallback, "case ${target} in\n*-*-boredos*)\n  gas=yes\n  gnu_ld=yes\n  default_use_cxa_atexit=yes\n  use_gcc_stdint=wrap\n  ;;\n*-*-linux*")
 
-# patch gcc/config.gcc (x86_64-*-elf* target)
+# patch gcc/config.gcc (x86_64-*-elf* target block)
 target_block = """x86_64-*-elf*)
     tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
     ;;"""
@@ -177,6 +177,11 @@ else:
 
 with open("gcc-14.2.0/gcc/config.gcc", "w") as f:
     f.write(content)
+
+# Fix missing layout registration for custom target headers
+replace_or_die("gcc-14.2.0/gcc/config.gcc",
+               "extra_headers=",
+               "extra_headers=\ncase ${target} in\n*-*-boredos*)\n  tm_file=\"${tm_file} boredos.h\"\n  ;;\nesac\nextra_headers=")
 
 # patch libstdc++-v3/configure.host
 replace_or_die("gcc-14.2.0/libstdc++-v3/configure.host",
