@@ -80,33 +80,33 @@ patch_binutils() {
     log "Patching binutils..."
     python3 -c '
 import sys
+
+def replace_or_die(filename, search, replace):
+    with open(filename, "r") as f:
+        content = f.read()
+    if search not in content:
+        print(f"ERROR: Substring not found in {filename}:", repr(search), file=sys.stderr)
+        sys.exit(1)
+    with open(filename, "w") as f:
+        f.write(content.replace(search, replace))
+
 # patch config.sub
-with open("binutils-2.42/config.sub", "r") as f:
-    content = f.read()
-content = content.replace("| mlibc* |", "| mlibc* | boredos* |")
-with open("binutils-2.42/config.sub", "w") as f:
-    f.write(content)
+replace_or_die("binutils-2.42/config.sub", "| mlibc* |", "| mlibc* | boredos* |")
 
 # patch bfd/config.bfd
-with open("binutils-2.42/bfd/config.bfd", "r") as f:
-    content = f.read()
-content = content.replace("x86_64-*-elf* | x86_64-*-rtems*)", "x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-boredos*)")
-with open("binutils-2.42/bfd/config.bfd", "w") as f:
-    f.write(content)
+replace_or_die("binutils-2.42/bfd/config.bfd",
+               "x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia | x86_64-*-genode*)",
+               "x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia | x86_64-*-genode* | x86_64-*-boredos*)")
 
 # patch gas/configure.tgt
-with open("binutils-2.42/gas/configure.tgt", "r") as f:
-    content = f.read()
-content = content.replace("i386-*-elf* | x86_64-*-elf*)", "i386-*-elf* | x86_64-*-elf* | x86_64-*-boredos*)")
-with open("binutils-2.42/gas/configure.tgt", "w") as f:
-    f.write(content)
+replace_or_die("binutils-2.42/gas/configure.tgt",
+               "i386-*-elf*)",
+               "i386-*-elf* | i386-*-boredos*)")
 
 # patch ld/configure.tgt
-with open("binutils-2.42/ld/configure.tgt", "r") as f:
-    content = f.read()
-content = content.replace("x86_64-*-elf*)", "x86_64-*-elf* | x86_64-*-boredos*)")
-with open("binutils-2.42/ld/configure.tgt", "w") as f:
-    f.write(content)
+replace_or_die("binutils-2.42/ld/configure.tgt",
+               "x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia* | x86_64-*-genode*)",
+               "x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia* | x86_64-*-genode* | x86_64-*-boredos*)")
 '
 }
 
