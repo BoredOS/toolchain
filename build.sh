@@ -128,7 +128,6 @@ def replace_or_die(filename, search, replace):
 # patch config.sub
 replace_or_die("gcc-14.2.0/config.sub", "| fiwix* )", "| fiwix* | boredos* )")
 
-# patch gcc/config.gcc
 with open("gcc-14.2.0/gcc/config.gcc", "r") as f:
     content = f.read()
 
