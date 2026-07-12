@@ -194,16 +194,21 @@ boredos_libgcc = (
     "\t;;\n"
 )
 
-import re
-# Find the final catch-all *) in the case block
-m = re.search(r"\n[ \t]*[*][)]\s*\n", content)
-if not m:
-    print("ERROR: Could not find catch-all *) in libgcc/config.host", file=sys.stderr)
+search_str = "case ${host} in\n"
+if search_str not in content:
+    print("ERROR: Could not find (case ${host} in) in libgcc/config.host", file=sys.stderr)
     sys.exit(1)
-content = content[:m.start()] + "\n" + boredos_libgcc + content[m.start():]
+
+content = content.replace(search_str, search_str + boredos_libgcc, 1)
+
 with open("gcc-14.2.0/libgcc/config.host", "w") as f:
     f.write(content)
 '
+    log "Sanity-checking libgcc/config.host patch..."
+    if ! grep -A1 'case ${host} in' "gcc-${GCC_VERSION}/libgcc/config.host" | grep -q 'x86_64-\*-boredos\*)'; then
+        die "libgcc/config.host patch did not land right after 'case \${host} in' — aborting before build"
+    fi
+    log "libgcc/config.host patch verified OK."
 }
 
 log "Building ${TARGET_NAME} Stage 2 cross-toolchain → ${PREFIX}"
