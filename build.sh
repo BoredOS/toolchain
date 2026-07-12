@@ -291,6 +291,7 @@ mkdir -p build-gcc-stage1
         --disable-nls \
         --disable-multilib \
         --disable-bootstrap \
+        --disable-fixincludes \
         --disable-libssp \
         --disable-libquadmath \
         --disable-libgomp \
