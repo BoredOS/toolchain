@@ -183,6 +183,11 @@ replace_or_die("gcc-14.2.0/libstdc++-v3/configure.host",
                "\ncase \"${host_os}\" in",
                "\ncase \"${host_os}\" in\n  boredos*)\n    os_include_dir=\"os/generic\"\n    ;;")
 
+# patch libstdc++-v3/configure target checks to whitelist boredos matching linux configurations
+replace_or_die("gcc-14.2.0/libstdc++-v3/configure",
+               "*-linux* | *-gnu* | *-kfreebsd*-gnu | *-uclinux*)",
+               "*-linux* | *-gnu* | *-kfreebsd*-gnu | *-uclinux* | *-boredos*)")
+
 # patch libgcc/config.host
 with open("gcc-14.2.0/libgcc/config.host", "r") as f:
     content = f.read()
