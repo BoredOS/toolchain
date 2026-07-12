@@ -157,12 +157,11 @@ else:
 
 # patch gcc/config.gcc (x86_64-*-elf* target)
 target_block = """x86_64-*-elf*)
-	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
-	tmake_file="${tmake_file} i386/t-i386elf"
+	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
 	;;"""
 
 boredos_target = """x86_64-*-boredos*)
-	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h glibc-stdint.h i386/x86-64.h boredos.h"
+	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h glibc-stdint.h i386/x86-64.h boredos.h"
 	tmake_file="${tmake_file} i386/t-linux64"
 	;;"""
 
