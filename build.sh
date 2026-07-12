@@ -194,21 +194,31 @@ boredos_libgcc = (
     "\t;;\n"
 )
 
-search_str = "case ${host} in\n"
-if search_str not in content:
-    print("ERROR: Could not find (case ${host} in) in libgcc/config.host", file=sys.stderr)
+catchall = (
+    "*)\n"
+    "\techo \"*** Configuration ${host} not supported\" 1>&2\n"
+    "\texit 1\n"
+    "\t;;\n"
+    "esac"
+)
+
+if catchall not in content:
+    print("ERROR: Could not find libgcc/config.host catch-all arm", file=sys.stderr)
     sys.exit(1)
 
-content = content.replace(search_str, search_str + boredos_libgcc, 1)
+content = content.replace(catchall, boredos_libgcc + catchall, 1)
 
 with open("gcc-14.2.0/libgcc/config.host", "w") as f:
     f.write(content)
 '
     log "Sanity-checking libgcc/config.host patch..."
-    if ! grep -A1 'case ${host} in' "gcc-${GCC_VERSION}/libgcc/config.host" | grep -q 'x86_64-\*-boredos\*)'; then
-        die "libgcc/config.host patch did not land right after 'case \${host} in' — aborting before build"
+    if ! awk '
+        /x86_64-\*-boredos\*\)/ { found_entry=1 }
+        found_entry && /\*\*\* Configuration \$\{host\} not supported/ { print "OK"; exit }
+    ' "gcc-${GCC_VERSION}/libgcc/config.host" | grep -q OK; then
+        die "libgcc/config.host patch did not land right before the real catch-all. aborting before build"
     fi
-    log "libgcc/config.host patch verified OK."
+    log "libgcc/config.host patch verified OK (entry precedes the real catch-all)."
 }
 
 log "Building ${TARGET_NAME} Stage 2 cross-toolchain → ${PREFIX}"
