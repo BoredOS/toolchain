@@ -88,6 +88,8 @@ patch_binutils() {
     log "Regenerating ld Makefile..."
     pushd "binutils-${BINUTILS_VERSION}/ld"
     echo ${AUTOMAKE}
+    export PERL5LIB=${SYSROOT}${PREFIX}/share/automake-1.15/
+    echo $PERL5LIB
     ${AUTOMAKE}
     popd
 }
