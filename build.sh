@@ -89,6 +89,7 @@ patch_binutils() {
     pushd "binutils-${BINUTILS_VERSION}/ld"
     echo ${AUTOMAKE}
     export PERL5LIB=${SYSROOT}${PREFIX}/share/automake-1.15/
+    export AUTOMAKE_LIBDIR=${SYSROOT}${PREFIX}/share/automake-1.15/
     echo $PERL5LIB
     ${AUTOMAKE}
     popd
