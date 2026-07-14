@@ -136,7 +136,7 @@ rm autoconf-2.69.tar.gz
 pushd autoconf-2.69
 ./configure --prefix=${SYSROOT}${PREFIX}
 make -j${JOBS}
-make DESTDIR=$SYSROOT install
+make install
 popd
 
 curl -fsSL --retry 3 "https://ftpmirror.gnu.org/gnu/automake/automake-1.15.1.tar.gz" -o "automake-1.15.1.tar.gz"
@@ -146,7 +146,7 @@ rm automake-1.15.1.tar.gz
 pushd automake-1.15.1
 ./configure --prefix=${SYSROOT}${PREFIX}
 make -j${JOBS}
-make DESTDIR=$SYSROOT install
+make install
 popd
 
 which autoconf
