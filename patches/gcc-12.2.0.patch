@@ -70,10 +70,8 @@ diff -Naur old_extract/gcc-12.2.0/libgcc/config.host new_workspace/gcc-12.2.0/li
 diff -Naur old_extract/gcc-12.2.0/libstdc++-v3/configure.ac new_workspace/gcc-12.2.0/libstdc++-v3/configure.ac
 --- a/libstdc++-v3/configure.ac	2022-08-19 03:09:55.420698825 -0500
 +++ b/libstdc++-v3/configure.ac	2026-07-12 16:46:32.030293389 -0500
-@@ -1,4 +1,5 @@
- # Process this file with autoreconf to produce a configure script.
+@@ -3,3 +3,4 @@
 +m4_define([_GCC_AUTOCONF_VERSION_CHECK], [])
- 
  AC_INIT(package-unused, version-unused,, libstdc++)
  AC_CONFIG_SRCDIR(src/shared/hashtable-aux.cc)
 @@ -118,7 +118,7 @@
