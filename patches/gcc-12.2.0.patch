@@ -86,3 +86,10 @@ diff '--color=auto' -rU0 --new-file gcc-12.2.0/libstdc++-v3/crossconfig.m4 bored
 +    GLIBCXX_CHECK_STDLIB_SUPPORT
 +    ;;
 +
+diff '--color=auto' -rU0 --new-file gcc-12.2.0/libcpp/system.h boredos-gcc-12.2.0/libcpp/system.h
+--- gcc-12.2.0/libcpp/system.h	2022-08-19 03:09:55.420698825 -0500
++++ boredos-gcc-12.2.0/libcpp/system.h	2026-02-27 12:49:36.069625212 -0600
+@@ -273,0 +274,3 @@
++#ifdef ENABLE_NLS
++# include <libintl.h>
++#endif
